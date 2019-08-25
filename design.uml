@@ -1,0 +1,12 @@
+@startuml
+start
+:Import CSV;
+floating note right: Import a list of domains or emails
+:Check MX records;
+note left
+Check if they are on 
+<b>Office 365</b> or <b>GSuite</b>
+end note
+:Generate HTML report;
+stop
+@enduml
