@@ -6,18 +6,25 @@ function Get-Harvest {
         [String]$WhichSearch,
 
         [parameter(Mandatory=$true)]
-        [PSCustomObject]$businesses,
+        [Array]$businesses,
 
         [parameter(Mandatory=$false)]
         [switch]
         $AutoRepeat,
 
         [int]$StartFrom,
-        [int]$EndFrom
+        [int]$End
         
     )
       begin {
+        <# ********** Variables *****************#>
+        $i = 0;
+        [System.Collections.ArrayList]$expandedBusinesses = @();
+        $theHarvesterScript = 'C:\Users\Luke\Desktop\theHarvester\theHarvester.py';
+        $python = 'C:\Python37\python.exe';
 
+
+        <# ********** Helper Functions **********#>
       function Get-Linked {
           Write-Host "Called Get-Linked $businesses";
       }
@@ -45,6 +52,7 @@ function Get-Harvest {
             # ^((\w+)\s(\w+)).*
 
       }
+    }
     function Get-Duplicates {
         [CmdletBinding()]
         param()
@@ -52,7 +60,56 @@ function Get-Harvest {
         Write-Host "$numOfDuplicates spas with the same name."
 
     }
+    function Get-VPN {
+        $NordVPN = "'C:\Program Files (x86)\NordVPN\NordVPN.exe'";
+        $disconnect =  " -d";
+        $connect = " -c -n `"United States`"";
 
+        Write-Information "Switching IP address." -InformationAction Continue;
+        & $NordVPN $disconnect;
+        Start-Sleep -Seconds 10
+        & $NordVPN $connect;
+        Start-Sleep -Seconds 10
+        # @TODO Should the $Measure-Command $twitterOutput be in a separate function?
+
+    }
+
+    <# Main Code Stuff 
+                __                ___               ___
+              ,' ,'              |   |              `. `.
+            ,' ,'                |===|                `. `.
+           / //                  |___|                  \\ \
+          / //                   |___|                   \\ \
+         ////                    |___|                    \\\\
+        /  /                    ||   ||                    \  \
+       /  /                     ||   ||                     \  \
+      /| |                      ||   ||                      | |\
+      || |                     | : o : |                     | ||
+     |  \|                     | .===. |                     |/  |
+     |  |\                    /| (___) |\                    /|  |
+    |__||.\         .-.      // /,_._,\ \\      .-.         /.||__|
+    |__||_.\        `-.\    //_ [:(|):] _\\    /.-'        /._||__|
+ __/|  ||___`._____ ___\\__/___/_ ||| _\___\__//___ _____.'___||_ |\__
+/___//__________/.-/_____________|.-.|_____________\-.\__________\\___\
+\___\\__\\\_____\`-\__\\\\__\____|_-_|____/_//_____/-'/__//______//__//
+   \|__||__..'         //  \ _ \__|||__/ _ /  \\         `..__||__|/
+    |__||_./        .-'/    \\   |(|)|   //    \`-.        \..||__|
+    |  || /         `-'      \\   \'/   //      `-'         \ ||  |
+     |  |/                    \| :(-): |/                    \|  |
+     |  /|                     | : o : |                     |\  |
+      || |                     | |___| |                     | ||
+      \| |                      ||   ||                      | |/
+       \  \                     ||   ||                     /  /
+        \  \                    ||___||                    /  /
+         \\\\                    |___|                    ////
+          \ \\                   |___|                   // /
+           \ \\                  |   |                  // /
+            `. `.                |===|                ,' ,'
+              `._`.              |___|              ,'_,'
+
+############### MAIN CODE STARTS HERE ##################################>
+
+    Write-Host "You Passed A list of businesses that is $($businesses.count)"
     if ($WhichSearch -match "LinkedIn") {
         Get-Linked; 
     } elseif ($WhichSearch -match "Hunter") {
@@ -60,7 +117,8 @@ function Get-Harvest {
     } elseif ($WhichSearch -match "Twitter") {
         Get-Twitter;
     }
-    } 
+    <# ####  END BEGIN ########### #>
+    }     
     process {
 
     }
