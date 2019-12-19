@@ -6,19 +6,26 @@ function Get-Harvest {
         [String]$WhichSearch,
 
         [parameter(Mandatory=$true)]
-        [Array]$businesses,
+        [Array]$Businesses,
 
         [parameter(Mandatory=$false)]
         [switch]
         $AutoRepeat,
 
-        [int]$StartFrom,
-        [int]$End
+        [parameter(Mandatory=$false)]
+        [int]$SleepTime = 15,
+
+        [parameter(Mandatory=$false)]
+        [int]$StartFrom = 0,
+
+        [parameter(Mandatory=$false)]
+        [int]$End = $Businesses.Length;
         
     )
       begin {
         <# ********** Variables *****************#>
         $i = 0;
+        $stopAt = 0;
         [System.Collections.ArrayList]$expandedBusinesses = @();
         $theHarvesterScript = 'C:\Users\Luke\Desktop\theHarvester\theHarvester.py';
         $python = 'C:\Python37\python.exe';
@@ -26,15 +33,20 @@ function Get-Harvest {
 
         <# ********** Helper Functions **********#>
       function Get-Linked {
-          Write-Host "Called Get-Linked $businesses";
+
+          Write-Verbose "Called Get-Linked $Businesses";
+          Write-Verbose "Using Business Name not domain name to search LinkedIn."
+
+          
+          
       }
 
       function Get-Hunter {
-          Write-host "Called Get-Hunter $businesses";
+          Write-host "Called Get-Hunter $Businesses";
       }
 
       function Get-Twitter {
-          Write-Host "Called Get-Twitter $businesses";
+          Write-Host "Called Get-Twitter $Businesses";
       }
 
       function Get-Input {
@@ -52,6 +64,15 @@ function Get-Harvest {
             # ^((\w+)\s(\w+)).*
 
       }
+
+      filter runHarvest {
+        Start-Sleep -Seconds $SleepTime;
+
+        $_ | filter $($spas[$i]."Business Name")
+        &python $theHarvesterScript -d $_ -l 200 -b linkedin 
+
+      }
+
     }
     function Get-Duplicates {
         [CmdletBinding()]
@@ -109,7 +130,24 @@ function Get-Harvest {
 
 ############### MAIN CODE STARTS HERE ##################################>
 
-    Write-Host "You Passed A list of businesses that is $($businesses.count)"
+    Write-Verbose "You Passed A list of businesses that is $($Businesses.count)"
+
+    if($StartFrom) {
+        Write-Verbose "Passed a starting value (which business to start the harvest from.";
+        $i = $StartFrom;
+        Write-Verbose "`$i is $i and `$StartFrom is $StartFrom";
+    }  
+    if($End) {
+        Write-Verbose "Passed an ending value (which business to end the harvest at.";
+        $stopAt = $End;
+        Write-Verbose "`$stopAt is $stopAt"
+    } else {
+        Write-Verbose "No ending number specified."
+        $stopAt = $Businesses.Count;
+        Write-Verbose "`$stopAt set to total number of businesses."
+        Write-Verbose "`$stopAt is $stopAt"
+    }
+
     if ($WhichSearch -match "LinkedIn") {
         Get-Linked; 
     } elseif ($WhichSearch -match "Hunter") {
@@ -117,7 +155,7 @@ function Get-Harvest {
     } elseif ($WhichSearch -match "Twitter") {
         Get-Twitter;
     }
-    <# ####  END BEGIN ########### #>
+    <# ##########  END BEGIN ########### #>
     }     
     process {
 

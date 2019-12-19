@@ -143,7 +143,7 @@ function Get-LinkedIn {
         if ($userInput -match "V") {
             Get-VPN;
         } elseif ($userInput -match "R") {
-            $i = $i - 1;
+            $StartFrom = $StartFrom - 1;
         } elseif ($userInput -match "A") {
             # REGEX to only match lines that start with a full name
             # ^((\w+)\s(\w+)).*
