@@ -9,19 +9,24 @@ function Get-Harvest {
         [Array]$Businesses,
 
         [parameter(Mandatory=$false)]
-        [switch]
-        $AutoRepeat,
-
-        [parameter(Mandatory=$false)]
         [int]$SleepTime = 15,
 
         [parameter(Mandatory=$false)]
         [int]$StartFrom = 0,
 
         [parameter(Mandatory=$false)]
-        [int]$End = $Businesses.Length;
-        
+        [int]$End = $Businesses.Length,
+
+        [switch]
+        $AutoRepeat,
+
+        [switch]
+        $RepeatOnFailure
+
+        # @TODO repeat a specific number of times on failure?
+
     )
+
       begin {
         <# ********** Variables *****************#>
         $i = 0;
@@ -34,11 +39,13 @@ function Get-Harvest {
         <# ********** Helper Functions **********#>
       function Get-Linked {
 
-          Write-Verbose "Called Get-Linked $Businesses";
+          Write-Verbose "Called Get-Linked for $($Businesses[$i]."Business Name")";
           Write-Verbose "Using Business Name not domain name to search LinkedIn."
-
+          $getHarvestScript = @"
           
-          
+        $python $theHarvesterScript -d $($Businesses[$i]."Business Name") -l 200 -b linkedin  
+"@
+        $script:LinkedOutput = Invoke-Expression -Command $getHarvestScript;
       }
 
       function Get-Hunter {
@@ -51,8 +58,8 @@ function Get-Harvest {
 
       function Get-Input {
 
-        $userInput = Read-Host "Next business? Enter to continue,  
-        V to switch VPN, R to repeat, A to Add, S to Show new list. `
+        $userInput = Read-Host "Next business? Enter to add and continue,  
+        V to switch VPN, R to repeat, 
         E to export"
         # @TODO a way to retry the previous attempt
         if ($userInput -match "V") {
@@ -65,15 +72,6 @@ function Get-Harvest {
 
       }
 
-      filter runHarvest {
-        Start-Sleep -Seconds $SleepTime;
-
-        $_ | filter $($spas[$i]."Business Name")
-        &python $theHarvesterScript -d $_ -l 200 -b linkedin 
-
-      }
-
-    }
     function Get-Duplicates {
         [CmdletBinding()]
         param()
@@ -132,35 +130,26 @@ function Get-Harvest {
 
     Write-Verbose "You Passed A list of businesses that is $($Businesses.count)"
 
-    if($StartFrom) {
-        Write-Verbose "Passed a starting value (which business to start the harvest from.";
-        $i = $StartFrom;
-        Write-Verbose "`$i is $i and `$StartFrom is $StartFrom";
-    }  
-    if($End) {
-        Write-Verbose "Passed an ending value (which business to end the harvest at.";
-        $stopAt = $End;
-        Write-Verbose "`$stopAt is $stopAt"
-    } else {
-        Write-Verbose "No ending number specified."
-        $stopAt = $Businesses.Count;
-        Write-Verbose "`$stopAt set to total number of businesses."
-        Write-Verbose "`$stopAt is $stopAt"
-    }
+    $i = $StartFrom;
 
-    if ($WhichSearch -match "LinkedIn") {
-        Get-Linked; 
-    } elseif ($WhichSearch -match "Hunter") {
-        Get-Hunter;
-    } elseif ($WhichSearch -match "Twitter") {
-        Get-Twitter;
-    }
+    while ($i++ -lt $End) {
+
+    Write-Host "Up to $($Businesses[$i]."Business Name")"
+    <# ##########  READ INPUT ########## #>
+    Get-Input;
+        if ($WhichSearch -match "LinkedIn") {
+            Get-Linked; 
+        } elseif ($WhichSearch -match "Hunter") {
+            Get-Hunter;
+        } elseif ($WhichSearch -match "Twitter") {
+            Get-Twitter;
+        }
     <# ##########  END BEGIN ########### #>
     }     
     process {
 
     }
     end {
-
+        Write-Host "Thank you, come again."
     }
 }
