@@ -20,10 +20,15 @@ function Get-Harvest {
         [switch]
         $AutoRepeat,
 
+        # repeat a specific number of times on failure?
         [switch]
-        $RepeatOnFailure
+        $RepeatOnFailure,
 
-        # @TODO repeat a specific number of times on failure?
+        [switch]
+        $UseBusinessName
+        # use the business name and not
+
+        # @TODO A switch to USE 
 
     )
 
@@ -37,40 +42,26 @@ function Get-Harvest {
 
 
         <# ********** Helper Functions **********#>
-      function Get-Linked {
-
-          Write-Verbose "Called Get-Linked for $($Businesses[$i]."Business Name")";
-          Write-Verbose "Using Business Name not domain name to search LinkedIn."
-          $getHarvestScript = @"
-          
-        $python $theHarvesterScript -d $($Businesses[$i]."Business Name") -l 200 -b linkedin  
-"@
-        $script:LinkedOutput = Invoke-Expression -Command $getHarvestScript;
-      }
-
-      function Get-Hunter {
-          Write-host "Called Get-Hunter $Businesses";
-      }
-
-      function Get-Twitter {
-          Write-Host "Called Get-Twitter $Businesses";
-      }
-
+        # @TODO refactor so only one script block works for most functions twitter, linkedin, 
+        # hunter etc.
       function Get-Input {
 
-        $userInput = Read-Host "Next business? Enter to add and continue,  
-        V to switch VPN, R to repeat, 
-        E to export"
-        # @TODO a way to retry the previous attempt
-        if ($userInput -match "V") {
-            Get-VPN;
-        } elseif ($userInput -match "R") {
-            $i = $i - 1;
-        } elseif ($userInput -match "A") {
-            # REGEX to only match lines that start with a full name
-            # ^((\w+)\s(\w+)).*
-
-      }
+            $userInput = Read-Host "Enter to Harvest or continue,  
+            V to switch VPN, R to repeat previous, S to Save/Export"
+            # @TODO a way to retry the previous attempt
+            if ($userInput -match "V") {
+                Get-VPN;
+            } elseif ($userInput -match "R") {
+                $i = $i - 1;
+            } 
+            elseif ($userInput -match "S") {
+                Write-Verbose "Saving `$expandedBusinesses"
+                Write-Verbose "Both as CliXML and CSV."
+                Export-CliXml -InputObject $expandedBusinesses -Path .\biz-with-harvest.xml 
+                Export-Csv -InputObject $expandedBusinesses -Path .\biz-with-harvest.csv
+                
+            }
+    }
 
     function Get-Duplicates {
         [CmdletBinding()]
@@ -136,16 +127,43 @@ function Get-Harvest {
 
     Write-Host "Up to $($Businesses[$i]."Business Name")"
     <# ##########  READ INPUT ########## #>
+    # @TODO Remove these and just have the here string
+    # Read which search engine to use
+
     Get-Input;
-        if ($WhichSearch -match "LinkedIn") {
-            Get-Linked; 
-        } elseif ($WhichSearch -match "Hunter") {
-            Get-Hunter;
-        } elseif ($WhichSearch -match "Twitter") {
-            Get-Twitter;
-        }
+    Write-Verbose "About to $($Businesses[$i]."Business Name") using $WhichSearch";
+    Write-Verbose "Using Business Name not domain name to search LinkedIn."
+    if($UseBusinessName) {
+        $dSwitch = "$($Businesses[$i].'Business Name')"
+    } else {
+        # @TODO ! Use Regex to extract ONLY the domain name
+        
+        $dSwitch = "$($Businesses[$i].'Website')"
+    }
+
+    $getHarvestScript = @"
+$python $theHarvesterScript -d $dSwitch -l 200 -b $WhichSearch  
+"@
+
+    [string]$HarvestOutput = Invoke-Expression -Command $getHarvestScript;
+    Write-Verbose $HarvestOutput;
+    Write-Verbose "Running RegEx";
+    $bizInfoToAdd = $HarvestOutput -match "^((\w+)\s(\w+)).*";
+    Write-Verbose "Adding new $WhichSearch property to $($Businesses[$i].'Business Name')";
+
+    $bizWithHarvestResult = $Businesses[$i];
+    $bizWithHarvestResult = $bizWithHarvestResult | Add-Member -MemberType NoteProperty
+         -Name "$WhichSearch Harvest" -Value $bizInfoToAdd;
+
+    # Flatten the harvest result
+    $bizWithHarvestResult | % { $_."$WhichSearch Harvest" = $_."$WhichSearch Harvest" -join ', '};
+    Write-Verbose "Adding $bizWithHarvestResult to `$expandedBusinesses";
+    $expandedBusinesses.add($bizWithHarvestResult);
+
     <# ##########  END BEGIN ########### #>
-    }     
+        }     
+    }
+
     process {
 
     }
