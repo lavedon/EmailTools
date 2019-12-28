@@ -17,9 +17,6 @@ function Get-Harvest {
         [parameter(Mandatory=$false)]
         [int]$End = $Businesses.Length,
 
-        [switch]
-        $AutoRepeat,
-
         # repeat a specific number of times on failure?
         [switch]
         $RepeatOnFailure,
@@ -34,11 +31,10 @@ function Get-Harvest {
 
       begin {
         <# ********** Variables *****************#>
-        $i = 0;
-        $stopAt = 0;
         [System.Collections.ArrayList]$expandedBusinesses = @();
         $theHarvesterScript = 'C:\Users\Luke\Desktop\theHarvester\theHarvester.py';
         $python = 'C:\Python37\python.exe';
+        $WhichSearch = $WhichSearch.toLower();
 
 
         <# ********** Helper Functions **********#>
@@ -55,12 +51,17 @@ function Get-Harvest {
                 $i = $i - 1;
             } 
             elseif ($userInput -match "S") {
-                Write-Verbose "Saving `$expandedBusinesses"
-                Write-Verbose "Both as CliXML and CSV."
-                Export-CliXml -InputObject $expandedBusinesses -Path .\biz-with-harvest.xml 
-                Export-Csv -InputObject $expandedBusinesses -Path .\biz-with-harvest.csv
-                
+                Save-Data;    
             }
+    }
+
+    function Save-Data {
+        [CmdletBinding()]
+        param()
+            Write-Verbose "Saving `$expandedBusinesses";
+            Write-Verbose "Both as CliXML and CSV.";
+            Export-CliXml -InputObject $expandedBusinesses -Path .\biz-with-harvest.xml; 
+            Export-Csv -InputObject $expandedBusinesses -Path .\biz-with-harvest.csv -NoTypeInformation;
     }
 
     function Get-Duplicates {
@@ -123,37 +124,47 @@ function Get-Harvest {
 
     $i = $StartFrom;
 
-    while ($i++ -lt $End) {
+    for ($i = $StartFrom; $i -lt $End; $i++) {
 
+    Write-Verbose "On businesses # $i";
     Write-Host "Up to $($Businesses[$i]."Business Name")"
     <# ##########  READ INPUT ########## #>
     # @TODO Remove these and just have the here string
     # Read which search engine to use
 
     Get-Input;
-    Write-Verbose "About to $($Businesses[$i]."Business Name") using $WhichSearch";
-    Write-Verbose "Using Business Name not domain name to search LinkedIn."
+    Write-Verbose "About to harvest $($Businesses[$i]."Business Name") using $WhichSearch";
     if($UseBusinessName) {
-        $dSwitch = "$($Businesses[$i].'Business Name')"
+        $dSwitch = "$($Businesses[$i].'Business Name')";
+        Write-Verbose "Using Business Name not domain name to search LinkedIn."
     } else {
         # @TODO ! Use Regex to extract ONLY the domain name
-        
         $dSwitch = "$($Businesses[$i].'Website')"
+        Write-Verbose "Using Website Domain Name NOT business name to search LinkedIn."
     }
 
     $getHarvestScript = @"
-$python $theHarvesterScript -d $dSwitch -l 200 -b $WhichSearch  
+$python $theHarvesterScript -d '$dSwitch' -l 200 -b '$WhichSearch'  
 "@
 
-    [string]$HarvestOutput = Invoke-Expression -Command $getHarvestScript;
+    [string]$HarvestOutput = Invoke-Expression -Command $getHarvestScript -Verbose;
     Write-Verbose $HarvestOutput;
     Write-Verbose "Running RegEx";
-    $bizInfoToAdd = $HarvestOutput -match "^((\w+)\s(\w+)).*";
+    [regex]$namesRegex = "(?<=-\s)(.+?)(?=\[\*\])";
+    $bizInfoToAdd = $namesRegex.matches($HarvestOutput).Value;
+    <# Some way of capturing each name in an array or object?
+    [regex]$eachNameRegex = "^((\w+)\s(\w+)).";
+    $bizInfoToAdd = $eachNameRegex.matches($namesOnly).Value;
+    #>
+    Write-Verbose "`$bizInfoToAdd is now $bizInfoToAdd";
+    
+
+
     Write-Verbose "Adding new $WhichSearch property to $($Businesses[$i].'Business Name')";
 
     $bizWithHarvestResult = $Businesses[$i];
-    $bizWithHarvestResult = $bizWithHarvestResult | Add-Member -MemberType NoteProperty
-         -Name "$WhichSearch Harvest" -Value $bizInfoToAdd;
+    $bizWithHarvestResult = $bizWithHarvestResult | Add-Member -MemberType NoteProperty `
+         -Name "$WhichSearch Harvest" -Value $bizInfoToAdd -Force; 
 
     # Flatten the harvest result
     $bizWithHarvestResult | % { $_."$WhichSearch Harvest" = $_."$WhichSearch Harvest" -join ', '};
@@ -168,6 +179,7 @@ $python $theHarvesterScript -d $dSwitch -l 200 -b $WhichSearch
 
     }
     end {
+        Save-Data;
         Write-Host "Thank you, come again."
     }
 }
