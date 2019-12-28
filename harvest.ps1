@@ -61,13 +61,36 @@ function Get-Harvest {
             Write-Verbose "Saving `$expandedBusinesses";
             Write-Verbose "Both as CliXML and CSV.";
             Export-CliXml -InputObject $expandedBusinesses -Path .\biz-with-harvest.xml; 
-            Export-Csv -InputObject $expandedBusinesses -Path .\biz-with-harvest.csv -NoTypeInformation;
+            # @TODO Export-CSV not yet working - have to format the object 
+            # Export-Csv -InputObject $expandedBusinesses -Path .\biz-with-harvest.csv -NoTypeInformation;
             Write-Verbose "Saving original list of businesses with added data to biz-list-modified.xml and .csv";
             Export-CliXml -InputObject $Businesses -Path .\full-biz-list-with-harvest.xml; 
-            Export-Csv -InputObject $Businesses -Path .\full-biz-list-with-harvest.csv -NoTypeInformation;
+            # @TODO Export-CSV not yet working - have to format the object 
+            # Export-Csv -InputObject $Businesses -Path .\full-biz-list-with-harvest.csv -NoTypeInformation;
 
     }
+    function Set-FlatCSV {
+        [CmdletBinding()]
+        param(
+            [parameter(Mandatory=$true)]
+            [Array]$inputObject
+        )
+        # @TODO take the input with a parameter
+        Write-Verbose "Flattening Object to CSV"
+        $csvObject = [PSCustomObject]@{};
+        [System.Collections.ArrayList]$objectArray = @{};
 
+        for( $i = 0; $i -lt $inputObject.count; $i++) { 
+            $objectArray = $inputObject[$i].psobject.properties.name;
+            for( $y = 0; $y -lt $objectArray; $y++) {
+                $csvObject | Add-Member -MemberType NoteProperty `
+                -Name $objectArray[$i] `
+                -Value $inputObject[$i].$objectArray[$i]
+                }
+            }
+            
+        }
+    
     function Get-Duplicates {
         [CmdletBinding()]
         param()
@@ -174,8 +197,7 @@ $python $theHarvesterScript -d '$dSwitch' -l 200 -b '$WhichSearch'
     #>
     Write-Verbose "Adding $($Businesses[$i].'Business Name') to `$expandedBusinesses";
     $expandedBusinesses.add($Businesss[$i]);
-
-    <# ##########  END BEGIN ########### #>
+    Save-Data;
         }     
     }
 
