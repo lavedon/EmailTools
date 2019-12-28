@@ -61,12 +61,10 @@ function Get-Harvest {
             Write-Verbose "Saving `$expandedBusinesses";
             Write-Verbose "Both as CliXML and CSV.";
             Export-CliXml -InputObject $expandedBusinesses -Path .\biz-with-harvest.xml; 
-            # @TODO Export-CSV not yet working - have to format the object 
-            # Export-Csv -InputObject $expandedBusinesses -Path .\biz-with-harvest.csv -NoTypeInformation;
+            $expandedBusinesses | Export-Csv -Path .\biz-with-harvest.csv -NoTypeInformation;
             Write-Verbose "Saving original list of businesses with added data to biz-list-modified.xml and .csv";
             Export-CliXml -InputObject $Businesses -Path .\full-biz-list-with-harvest.xml; 
-            # @TODO Export-CSV not yet working - have to format the object 
-            # Export-Csv -InputObject $Businesses -Path .\full-biz-list-with-harvest.csv -NoTypeInformation;
+            $Businesses | Export-Csv -Path .\full-biz-list-with-harvest.csv -NoTypeInformation;
 
     }
     
@@ -175,7 +173,7 @@ $python $theHarvesterScript -d '$dSwitch' -l 200 -b '$WhichSearch'
     $bizWithHarvestResult | % { $_."$WhichSearch Harvest" = $_."$WhichSearch Harvest" -join ', '}; 
     #>
     Write-Verbose "Adding $($Businesses[$i].'Business Name') to `$expandedBusinesses";
-    $expandedBusinesses.add($Businesss[$i]);
+    $expandedBusinesses.add($Businesses[$i]);
     Save-Data;
         }     
     }
