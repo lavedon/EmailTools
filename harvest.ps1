@@ -62,6 +62,10 @@ function Get-Harvest {
             Write-Verbose "Both as CliXML and CSV.";
             Export-CliXml -InputObject $expandedBusinesses -Path .\biz-with-harvest.xml; 
             Export-Csv -InputObject $expandedBusinesses -Path .\biz-with-harvest.csv -NoTypeInformation;
+            Write-Verbose "Saving original list of businesses with added data to biz-list-modified.xml and .csv";
+            Export-CliXml -InputObject $Businesses -Path .\full-biz-list-with-harvest.xml; 
+            Export-Csv -InputObject $Businesses -Path .\full-biz-list-with-harvest.csv -NoTypeInformation;
+
     }
 
     function Get-Duplicates {
@@ -162,14 +166,14 @@ $python $theHarvesterScript -d '$dSwitch' -l 200 -b '$WhichSearch'
 
     Write-Verbose "Adding new $WhichSearch property to $($Businesses[$i].'Business Name')";
 
-    $bizWithHarvestResult = $Businesses[$i];
-    $bizWithHarvestResult = $bizWithHarvestResult | Add-Member -MemberType NoteProperty `
-         -Name "$WhichSearch Harvest" -Value $bizInfoToAdd -Force; 
+    $Businesses[$i] | Add-Member -MemberType NoteProperty -Name "$WhichSearch Harvest" -Value $bizInfoToAdd -Force; 
 
-    # Flatten the harvest result
-    $bizWithHarvestResult | % { $_."$WhichSearch Harvest" = $_."$WhichSearch Harvest" -join ', '};
-    Write-Verbose "Adding $bizWithHarvestResult to `$expandedBusinesses";
-    $expandedBusinesses.add($bizWithHarvestResult);
+    <# 
+    Flatten the harvest result - NO LONGER NEEDED as the result is only a string and NOT an array or object 
+    $bizWithHarvestResult | % { $_."$WhichSearch Harvest" = $_."$WhichSearch Harvest" -join ', '}; 
+    #>
+    Write-Verbose "Adding $($Businesses[$i].'Business Name') to `$expandedBusinesses";
+    $expandedBusinesses.add($Businesss[$i]);
 
     <# ##########  END BEGIN ########### #>
         }     
