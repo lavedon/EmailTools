@@ -69,27 +69,6 @@ function Get-Harvest {
             # Export-Csv -InputObject $Businesses -Path .\full-biz-list-with-harvest.csv -NoTypeInformation;
 
     }
-    function Set-FlatCSV {
-        [CmdletBinding()]
-        param(
-            [parameter(Mandatory=$true)]
-            [Array]$inputObject
-        )
-        # @TODO take the input with a parameter
-        Write-Verbose "Flattening Object to CSV"
-        $csvObject = [PSCustomObject]@{};
-        [System.Collections.ArrayList]$objectArray = @{};
-
-        for( $i = 0; $i -lt $inputObject.count; $i++) { 
-            $objectArray = $inputObject[$i].psobject.properties.name;
-            for( $y = 0; $y -lt $objectArray; $y++) {
-                $csvObject | Add-Member -MemberType NoteProperty `
-                -Name $objectArray[$i] `
-                -Value $inputObject[$i].$objectArray[$i]
-                }
-            }
-            
-        }
     
     function Get-Duplicates {
         [CmdletBinding()]
